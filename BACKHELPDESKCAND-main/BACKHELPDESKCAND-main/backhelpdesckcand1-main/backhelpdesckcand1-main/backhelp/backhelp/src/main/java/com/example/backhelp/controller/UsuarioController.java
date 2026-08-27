@@ -31,6 +31,13 @@ public class UsuarioController {
         return ResponseEntity.ok(usuarioService.login(dto));
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<UsuarioResponseDTO> editarUsuario(
+            @PathVariable Long id,
+            @RequestBody @Valid UsuarioRequestDTO dto) {
+        return ResponseEntity.ok(usuarioService.editarUsuario(id, dto));
+    }
+
     @PutMapping("/{id}/confirmar-email")
     public ResponseEntity<UsuarioResponseDTO> confirmarEmail(@PathVariable Long id) {
         return ResponseEntity.ok(usuarioService.confirmarEmail(id));
