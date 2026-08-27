@@ -12,7 +12,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
-import java.util.UUID;
 
 @Service
 public class ChamadoService {
@@ -29,27 +28,21 @@ public class ChamadoService {
         UsuarioModel usuario = usuarioRepository.findById(dto.usuarioAberturaId())
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
 
-
         if (!usuario.isEmailConfirmado()) {
             throw new IllegalStateException("Abertura bloqueada até a confirmação do e-mail corporativo.");
         }
-
 
         if (dto.caminhoAnexo() != null && !dto.caminhoAnexo().isBlank() && !validarAnexo(dto.caminhoAnexo())) {
             throw new IllegalArgumentException("Extensão de anexo inválida. Formatos permitidos: .pdf, .svg, .png e .jpg.");
         }
 
         ChamadoModel chamado = new ChamadoModel();
-
-        chamado.setProtocolo("PROT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
         chamado.setCategoria(dto.categoria());
         chamado.setUrgencia(dto.urgencia());
         chamado.setDescricao(dto.descricao());
         chamado.setCaminhoAnexo(dto.caminhoAnexo());
         chamado.setUsuarioAbertura(usuario);
         chamado.setStatus(StatusChamado.ABERTO);
-
-
         chamado.setNivelAtendimento(Perfil.ATENDENTE_N1);
 
         ChamadoModel salvo = chamadoRepository.save(chamado);
@@ -59,7 +52,6 @@ public class ChamadoService {
     public ChamadoResponseDTO escalonarChamado(Long chamadoId, Perfil novoNivel) {
         ChamadoModel chamado = chamadoRepository.findById(chamadoId)
                 .orElseThrow(() -> new RuntimeException("Chamado não encontrado."));
-
 
         if (isDowngrade(chamado.getNivelAtendimento(), novoNivel)) {
             throw new IllegalArgumentException("Proibido rebaixar o nível de atendimento de um chamado.");
@@ -125,9 +117,8 @@ public class ChamadoService {
     }
 
     private boolean isDowngrade(Perfil atual, Perfil novo) {
-        if (atual == Perfil.ATENDENTE_N3 && (novo == Perfil.ATENDENTE_N2 || novo == Perfil.ATENDENTE_N1)) return true;
-        if (atual == Perfil.ATENDENTE_N2 && novo == Perfil.ATENDENTE_N1) return true;
-        return false;
+        if (atual == null || novo == null) return false;
+        return novo.ordinal() < atual.ordinal();
     }
 
     private ChamadoResponseDTO toDTO(ChamadoModel model) {
