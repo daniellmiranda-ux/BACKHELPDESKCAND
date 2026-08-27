@@ -2,6 +2,7 @@ package com.example.backhelp.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "tb_chamados")
@@ -11,7 +12,7 @@ public class ChamadoModel {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, updatable = false)
+    @Column(name = "protocolo", nullable = false, unique = true, updatable = false)
     private String protocolo;
 
     @Enumerated(EnumType.STRING)
@@ -32,7 +33,7 @@ public class ChamadoModel {
     private StatusChamado status = StatusChamado.ABERTO;
 
     @Enumerated(EnumType.STRING)
-    private Perfil nivelAtendimento; // ATENDENTE_N1, ATENDENTE_N2 ou ATENDENTE_N3
+    private Perfil nivelAtendimento;
 
     private LocalDateTime dataCriacao;
     private LocalDateTime dataFinalizacao;
@@ -49,19 +50,13 @@ public class ChamadoModel {
     @Column(columnDefinition = "TEXT")
     private String solucao;
 
-    // Método automático para calcular o prazo do SLA ao salvar o chamado
-    @PrePersist
-    public void prePersist() {
-        this.dataCriacao = LocalDateTime.now();
-        if (this.urgencia != null) {
-            this.dataLimiteSla = this.dataCriacao.plusHours(this.urgencia.getHorasSla());
-        }
-    }
-
     public ChamadoModel() {
     }
 
-    public ChamadoModel(Long id, String protocolo, Categoria categoria, Urgencia urgencia, String descricao, String caminhoAnexo, StatusChamado status, Perfil nivelAtendimento, LocalDateTime dataCriacao, LocalDateTime dataFinalizacao, LocalDateTime dataLimiteSla, UsuarioModel usuarioAbertura, UsuarioModel atendenteResponsavel, String solucao) {
+    public ChamadoModel(Long id, String protocolo, Categoria categoria, Urgencia urgencia, String descricao,
+                        String caminhoAnexo, StatusChamado status, Perfil nivelAtendimento,
+                        LocalDateTime dataCriacao, LocalDateTime dataFinalizacao, LocalDateTime dataLimiteSla,
+                        UsuarioModel usuarioAbertura, UsuarioModel atendenteResponsavel, String solucao) {
         this.id = id;
         this.protocolo = protocolo;
         this.categoria = categoria;
@@ -76,6 +71,19 @@ public class ChamadoModel {
         this.usuarioAbertura = usuarioAbertura;
         this.atendenteResponsavel = atendenteResponsavel;
         this.solucao = solucao;
+    }
+
+    @PrePersist
+    public void prePersist() {
+        this.dataCriacao = LocalDateTime.now();
+
+        if (this.protocolo == null) {
+            this.protocolo = "HD-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        }
+
+        if (this.urgencia != null) {
+            this.dataLimiteSla = this.dataCriacao.plusHours(this.urgencia.getHorasSla());
+        }
     }
 
     public Long getId() {
