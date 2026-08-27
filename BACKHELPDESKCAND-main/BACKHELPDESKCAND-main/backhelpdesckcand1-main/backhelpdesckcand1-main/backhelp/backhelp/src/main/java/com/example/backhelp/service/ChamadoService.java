@@ -43,7 +43,12 @@ public class ChamadoService {
         chamado.setCaminhoAnexo(dto.caminhoAnexo());
         chamado.setUsuarioAbertura(usuario);
         chamado.setStatus(StatusChamado.ABERTO);
-        chamado.setNivelAtendimento(Perfil.ATENDENTE_N1);
+
+        chamado.setNivelAtendimento(
+                "HARDWARE".equalsIgnoreCase(String.valueOf(dto.categoria()))
+                        ? Perfil.TECNICO_N2
+                        : Perfil.ATENDENTE_N1
+        );
 
         ChamadoModel salvo = chamadoRepository.save(chamado);
         return toDTO(salvo);
@@ -76,6 +81,19 @@ public class ChamadoService {
         }
 
         return toDTO(chamadoRepository.save(chamado));
+    }
+
+    public List<ChamadoResponseDTO> listarComFiltros(StatusChamado status, Perfil nivel, Urgencia urgencia) {
+        List<ChamadoModel> chamados = chamadoRepository.findAll();
+        
+        List<ChamadoModel> filtrados = chamados.stream()
+                .filter(c -> status == null || c.getStatus() == status)
+                .filter(c -> nivel == null || c.getNivelAtendimento() == nivel)
+                .filter(c -> urgencia == null || c.getUrgencia() == urgencia)
+                .toList();
+
+        atualizarStatusSla(filtrados);
+        return filtrados.stream().map(this::toDTO).toList();
     }
 
     public List<ChamadoResponseDTO> listarTodos() {
