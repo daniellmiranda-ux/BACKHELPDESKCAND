@@ -1,8 +1,4 @@
 
-Daniel Lima Miranda <daniel.l.miranda@ba.estudante.senai.br>
-21:12 (há 1 minuto)
-para mim
-
 package com.example.backhelp.exception;
 
 import org.springframework.http.HttpStatus;
