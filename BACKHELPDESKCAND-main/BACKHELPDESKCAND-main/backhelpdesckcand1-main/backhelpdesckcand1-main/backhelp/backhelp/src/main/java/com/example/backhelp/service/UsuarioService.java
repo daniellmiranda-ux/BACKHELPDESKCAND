@@ -19,7 +19,6 @@ public class UsuarioService {
     }
 
     public UsuarioResponseDTO cadastrar(UsuarioRequestDTO dto) {
-        // Validação estrita de domínio corporativo (RN01, RNF03)
         if (dto.email() == null || !dto.email().endsWith("@helpdeskcand.com")) {
             throw new IllegalArgumentException("Apenas e-mails do domínio @helpdeskcand.com são permitidos.");
         }
@@ -37,6 +36,28 @@ public class UsuarioService {
 
         UsuarioModel salvo = usuarioRepository.save(usuario);
         return toDTO(salvo);
+    }
+
+    public UsuarioResponseDTO editarUsuario(Long id, UsuarioRequestDTO dto) {
+        UsuarioModel usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
+
+        if (dto.email() != null) {
+            if (!dto.email().endsWith("@helpdeskcand.com")) {
+                throw new IllegalArgumentException("Apenas e-mails do domínio @helpdeskcand.com são permitidos.");
+            }
+            // Verifica se o novo e-mail já pertence a outro usuário
+            if (!usuario.getEmail().equals(dto.email()) && usuarioRepository.existsByEmail(dto.email())) {
+                throw new IllegalArgumentException("E-mail já cadastrado.");
+            }
+            usuario.setEmail(dto.email());
+        }
+        if (dto.setor() != null) usuario.setSetor(dto.setor());
+        if (dto.cargo() != null) usuario.setCargo(dto.cargo());
+        if (dto.perfil() != null) usuario.setPerfil(dto.perfil());
+
+        UsuarioModel atualizado = usuarioRepository.save(usuario);
+        return toDTO(atualizado);
     }
 
     public UsuarioResponseDTO login(LoginRequestDTO dto) {

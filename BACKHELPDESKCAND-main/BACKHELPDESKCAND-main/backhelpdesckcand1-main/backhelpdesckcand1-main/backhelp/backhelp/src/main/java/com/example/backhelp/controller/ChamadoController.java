@@ -5,6 +5,7 @@ import com.example.backhelp.dto.ChamadoResponseDTO;
 import com.example.backhelp.dto.DashboardDTO;
 import com.example.backhelp.model.Perfil;
 import com.example.backhelp.model.StatusChamado;
+import com.example.backhelp.model.Urgencia;
 import com.example.backhelp.service.ChamadoService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -29,8 +30,11 @@ public class ChamadoController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ChamadoResponseDTO>> listarTodos() {
-        return ResponseEntity.ok(chamadoService.listarTodos());
+    public ResponseEntity<List<ChamadoResponseDTO>> listarTodos(
+            @RequestParam(required = false) StatusChamado status,
+            @RequestParam(required = false) Perfil nivelAtendimento,
+            @RequestParam(required = false) Urgencia urgencia) {
+        return ResponseEntity.ok(chamadoService.listarComFiltros(status, nivelAtendimento, urgencia));
     }
 
     @PutMapping("/{id}/escalonar")
