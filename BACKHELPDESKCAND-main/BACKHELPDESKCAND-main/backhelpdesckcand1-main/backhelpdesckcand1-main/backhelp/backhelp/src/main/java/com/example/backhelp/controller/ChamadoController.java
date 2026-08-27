@@ -6,6 +6,7 @@ import com.example.backhelp.dto.DashboardDTO;
 import com.example.backhelp.model.Perfil;
 import com.example.backhelp.model.StatusChamado;
 import com.example.backhelp.service.ChamadoService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,7 +24,7 @@ public class ChamadoController {
     }
 
     @PostMapping
-    public ResponseEntity<ChamadoResponseDTO> criarChamado(@RequestBody ChamadoRequestDTO dto) {
+    public ResponseEntity<ChamadoResponseDTO> criarChamado(@Valid @RequestBody ChamadoRequestDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(chamadoService.criarChamado(dto));
     }
 
@@ -33,31 +34,19 @@ public class ChamadoController {
     }
 
     @PutMapping("/{id}/escalonar")
-    public ResponseEntity<?> escalonarChamado(
+    public ResponseEntity<ChamadoResponseDTO> escalonarChamado(
             @PathVariable Long id,
             @RequestParam Perfil novoNivel) {
-        try {
-            ChamadoResponseDTO chamadoAtualizado = chamadoService.escalonarChamado(id, novoNivel);
-            return ResponseEntity.ok(chamadoAtualizado);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-        }
+        return ResponseEntity.ok(chamadoService.escalonarChamado(id, novoNivel));
     }
 
     @PutMapping("/{id}/atender")
-    public ResponseEntity<?> atenderEConverter(
+    public ResponseEntity<ChamadoResponseDTO> atenderEConverter(
             @PathVariable Long id,
             @RequestParam Long atendenteId,
             @RequestParam StatusChamado status,
             @RequestBody(required = false) String solucao) {
-        try {
-            ChamadoResponseDTO chamadoAtualizado = chamadoService.atenderEConverter(id, atendenteId, status, solucao);
-            return ResponseEntity.ok(chamadoAtualizado);
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-        }
+        return ResponseEntity.ok(chamadoService.atenderEConverter(id, atendenteId, status, solucao));
     }
 
     @GetMapping("/dashboard")
