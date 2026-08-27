@@ -33,19 +33,31 @@ public class ChamadoController {
     }
 
     @PutMapping("/{id}/escalonar")
-    public ResponseEntity<ChamadoResponseDTO> escalonarChamado(
+    public ResponseEntity<?> escalonarChamado(
             @PathVariable Long id,
             @RequestParam Perfil novoNivel) {
-        return ResponseEntity.ok(chamadoService.escalonarChamado(id, novoNivel));
+        try {
+            ChamadoResponseDTO chamadoAtualizado = chamadoService.escalonarChamado(id, novoNivel);
+            return ResponseEntity.ok(chamadoAtualizado);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
     }
 
     @PutMapping("/{id}/atender")
-    public ResponseEntity<ChamadoResponseDTO> atenderEConverter(
+    public ResponseEntity<?> atenderEConverter(
             @PathVariable Long id,
             @RequestParam Long atendenteId,
             @RequestParam StatusChamado status,
             @RequestBody(required = false) String solucao) {
-        return ResponseEntity.ok(chamadoService.atenderEConverter(id, atendenteId, status, solucao));
+        try {
+            ChamadoResponseDTO chamadoAtualizado = chamadoService.atenderEConverter(id, atendenteId, status, solucao);
+            return ResponseEntity.ok(chamadoAtualizado);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
     }
 
     @GetMapping("/dashboard")
