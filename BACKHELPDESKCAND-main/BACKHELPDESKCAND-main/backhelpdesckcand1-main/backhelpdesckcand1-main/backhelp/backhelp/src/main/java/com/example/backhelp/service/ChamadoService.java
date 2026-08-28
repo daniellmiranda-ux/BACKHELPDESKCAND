@@ -46,7 +46,7 @@ public class ChamadoService {
 
         chamado.setNivelAtendimento(
                 "HARDWARE".equalsIgnoreCase(String.valueOf(dto.categoria()))
-                        ? Perfil.TECNICO_N2
+                        ? Perfil.ATENDENTE_N2
                         : Perfil.ATENDENTE_N1
         );
 
