@@ -1,6 +1,7 @@
 package com.example.backhelp.controller;
 
 import com.example.backhelp.dto.LoginRequestDTO;
+import com.example.backhelp.dto.LoginResponseDTO;
 import com.example.backhelp.dto.UsuarioRequestDTO;
 import com.example.backhelp.dto.UsuarioResponseDTO;
 import com.example.backhelp.service.UsuarioService;
@@ -27,8 +28,15 @@ public class UsuarioController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<UsuarioResponseDTO> login(@Valid @RequestBody LoginRequestDTO dto) {
+    public ResponseEntity<LoginResponseDTO> login(@Valid @RequestBody LoginRequestDTO dto) {
         return ResponseEntity.ok(usuarioService.login(dto));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<UsuarioResponseDTO> editarUsuario(
+            @PathVariable Long id,
+            @RequestBody @Valid UsuarioRequestDTO dto) {
+        return ResponseEntity.ok(usuarioService.editarUsuario(id, dto));
     }
 
     @PutMapping("/{id}/confirmar-email")

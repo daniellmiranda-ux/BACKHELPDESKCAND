@@ -1,10 +1,16 @@
 package com.example.backhelp.model;
 
 import jakarta.persistence.*;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import java.util.Collection;
+import java.util.List;
 
 @Entity
 @Table(name = "tb_usuarios")
-public class UsuarioModel {
+public class UsuarioModel implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -38,7 +44,6 @@ public class UsuarioModel {
         this.perfil = perfil;
         this.emailConfirmado = emailConfirmado;
     }
-
 
     public Long getId() {
         return id;
@@ -94,5 +99,46 @@ public class UsuarioModel {
 
     public void setEmailConfirmado(boolean emailConfirmado) {
         this.emailConfirmado = emailConfirmado;
+    }
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        if (this.perfil == Perfil.ADMIN) {
+            return List.of(
+                new SimpleGrantedAuthority("ROLE_ADMIN"), 
+                new SimpleGrantedAuthority("ROLE_USER")
+            );
+        }
+        return List.of(new SimpleGrantedAuthority("ROLE_USER"));
+    }
+
+    @Override
+    public String getPassword() {
+        return this.senha;
+    }
+
+    @Override
+    public String getUsername() {
+        return this.email;
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return true;
     }
 }

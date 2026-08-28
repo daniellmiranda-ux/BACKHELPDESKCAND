@@ -1,10 +1,13 @@
 package com.example.backhelp.service;
 
 import com.example.backhelp.dto.LoginRequestDTO;
+import com.example.backhelp.dto.LoginResponseDTO;
 import com.example.backhelp.dto.UsuarioRequestDTO;
 import com.example.backhelp.dto.UsuarioResponseDTO;
 import com.example.backhelp.model.UsuarioModel;
 import com.example.backhelp.repository.UsuarioRepository;
+import com.example.backhelp.security.TokenService;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -13,13 +16,16 @@ import java.util.List;
 public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
+    private final TokenService tokenService;
+    private final PasswordEncoder passwordEncoder;
 
-    public UsuarioService(UsuarioRepository usuarioRepository) {
+    public UsuarioService(UsuarioRepository usuarioRepository, TokenService tokenService, PasswordEncoder passwordEncoder) {
         this.usuarioRepository = usuarioRepository;
+        this.tokenService = tokenService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public UsuarioResponseDTO cadastrar(UsuarioRequestDTO dto) {
-        // Validação estrita de domínio corporativo (RN01, RNF03)
         if (dto.email() == null || !dto.email().endsWith("@helpdeskcand.com")) {
             throw new IllegalArgumentException("Apenas e-mails do domínio @helpdeskcand.com são permitidos.");
         }
@@ -29,7 +35,7 @@ public class UsuarioService {
 
         UsuarioModel usuario = new UsuarioModel();
         usuario.setEmail(dto.email());
-        usuario.setSenha(dto.senha());
+        usuario.setSenha(passwordEncoder.encode(dto.senha()));
         usuario.setSetor(dto.setor());
         usuario.setCargo(dto.cargo());
         usuario.setPerfil(dto.perfil());
@@ -39,15 +45,38 @@ public class UsuarioService {
         return toDTO(salvo);
     }
 
-    public UsuarioResponseDTO login(LoginRequestDTO dto) {
+    public LoginResponseDTO login(LoginRequestDTO dto) {
         UsuarioModel usuario = usuarioRepository.findByEmail(dto.email())
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
 
-        if (!usuario.getSenha().equals(dto.senha())) {
-            throw new RuntimeException("Senha incorreta.");
+        if (!passwordEncoder.matches(dto.senha(), usuario.getSenha())) {
+            throw new IllegalArgumentException("Senha incorreta.");
         }
 
-        return toDTO(usuario);
+        String token = tokenService.gerarToken(usuario.getEmail());
+        return new LoginResponseDTO(token);
+    }
+
+    public UsuarioResponseDTO editarUsuario(Long id, UsuarioRequestDTO dto) {
+        UsuarioModel usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
+
+        if (dto.email() != null) {
+            if (!dto.email().endsWith("@helpdeskcand.com")) {
+                throw new IllegalArgumentException("Apenas e-mails do domínio @helpdeskcand.com são permitidos.");
+            }
+            if (!usuario.getEmail().equals(dto.email()) && usuarioRepository.existsByEmail(dto.email())) {
+                throw new IllegalArgumentException("E-mail já cadastrado.");
+            }
+            usuario.setEmail(dto.email());
+        }
+
+        if (dto.setor() != null) usuario.setSetor(dto.setor());
+        if (dto.cargo() != null) usuario.setCargo(dto.cargo());
+        if (dto.perfil() != null) usuario.setPerfil(dto.perfil());
+
+        UsuarioModel atualizado = usuarioRepository.save(usuario);
+        return toDTO(atualizado);
     }
 
     public UsuarioResponseDTO confirmarEmail(Long id) {
