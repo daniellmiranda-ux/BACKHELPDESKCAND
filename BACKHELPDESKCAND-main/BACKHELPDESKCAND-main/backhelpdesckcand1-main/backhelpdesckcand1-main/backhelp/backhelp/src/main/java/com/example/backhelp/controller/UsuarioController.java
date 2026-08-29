@@ -1,6 +1,7 @@
 package com.example.backhelp.controller;
 
 import com.example.backhelp.dto.LoginRequestDTO;
+import com.example.backhelp.dto.TokenResponseDTO;
 import com.example.backhelp.dto.UsuarioRequestDTO;
 import com.example.backhelp.dto.UsuarioResponseDTO;
 import com.example.backhelp.service.UsuarioService;
@@ -27,7 +28,7 @@ public class UsuarioController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<UsuarioResponseDTO> login(@Valid @RequestBody LoginRequestDTO dto) {
+    public ResponseEntity<TokenResponseDTO> login(@Valid @RequestBody LoginRequestDTO dto) {
         return ResponseEntity.ok(usuarioService.login(dto));
     }
 
