@@ -1,10 +1,13 @@
 package com.example.backhelp.service;
 
 import com.example.backhelp.dto.LoginRequestDTO;
+import com.example.backhelp.dto.TokenResponseDTO;
 import com.example.backhelp.dto.UsuarioRequestDTO;
 import com.example.backhelp.dto.UsuarioResponseDTO;
 import com.example.backhelp.model.UsuarioModel;
 import com.example.backhelp.repository.UsuarioRepository;
+import com.example.backhelp.security.JwtTokenProvider;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -13,9 +16,13 @@ import java.util.List;
 public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtTokenProvider tokenProvider;
 
-    public UsuarioService(UsuarioRepository usuarioRepository) {
+    public UsuarioService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder, JwtTokenProvider tokenProvider) {
         this.usuarioRepository = usuarioRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.tokenProvider = tokenProvider;
     }
 
     public UsuarioResponseDTO cadastrar(UsuarioRequestDTO dto) {
@@ -28,7 +35,7 @@ public class UsuarioService {
 
         UsuarioModel usuario = new UsuarioModel();
         usuario.setEmail(dto.email());
-        usuario.setSenha(dto.senha());
+        usuario.setSenha(passwordEncoder.encode(dto.senha()));
         usuario.setSetor(dto.setor());
         usuario.setCargo(dto.cargo());
         usuario.setPerfil(dto.perfil());
@@ -46,7 +53,6 @@ public class UsuarioService {
             if (!dto.email().endsWith("@helpdeskcand.com")) {
                 throw new IllegalArgumentException("Apenas e-mails do domínio @helpdeskcand.com são permitidos.");
             }
-            // Verifica se o novo e-mail já pertence a outro usuário
             if (!usuario.getEmail().equals(dto.email()) && usuarioRepository.existsByEmail(dto.email())) {
                 throw new IllegalArgumentException("E-mail já cadastrado.");
             }
@@ -60,15 +66,16 @@ public class UsuarioService {
         return toDTO(atualizado);
     }
 
-    public UsuarioResponseDTO login(LoginRequestDTO dto) {
+    public TokenResponseDTO login(LoginRequestDTO dto) {
         UsuarioModel usuario = usuarioRepository.findByEmail(dto.email())
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
 
-        if (!usuario.getSenha().equals(dto.senha())) {
+        if (!passwordEncoder.matches(dto.senha(), usuario.getSenha())) {
             throw new RuntimeException("Senha incorreta.");
         }
 
-        return toDTO(usuario);
+        String token = tokenProvider.gerarToken(usuario.getEmail(), usuario.getPerfil().name());
+        return new TokenResponseDTO(token, "Bearer", toDTO(usuario));
     }
 
     public UsuarioResponseDTO confirmarEmail(Long id) {
