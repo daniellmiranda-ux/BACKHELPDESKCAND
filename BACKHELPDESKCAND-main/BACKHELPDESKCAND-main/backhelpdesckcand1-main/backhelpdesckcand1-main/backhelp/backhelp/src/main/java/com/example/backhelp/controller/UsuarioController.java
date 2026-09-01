@@ -8,6 +8,7 @@ import com.example.backhelp.service.UsuarioService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,6 +24,7 @@ public class UsuarioController {
     }
 
     @PostMapping("/cadastrar")
+    @PreAuthorize("hasAuthority('SETOR_ADMINISTRATIVO')")
     public ResponseEntity<UsuarioResponseDTO> cadastrar(@Valid @RequestBody UsuarioRequestDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(usuarioService.cadastrar(dto));
     }
@@ -33,6 +35,7 @@ public class UsuarioController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('SETOR_ADMINISTRATIVO')")
     public ResponseEntity<UsuarioResponseDTO> editarUsuario(
             @PathVariable Long id,
             @RequestBody @Valid UsuarioRequestDTO dto) {
@@ -45,6 +48,7 @@ public class UsuarioController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('SETOR_ADMINISTRATIVO')")
     public ResponseEntity<List<UsuarioResponseDTO>> listarTodos() {
         return ResponseEntity.ok(usuarioService.listarTodos());
     }

@@ -10,6 +10,7 @@ import com.example.backhelp.service.ChamadoService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -38,6 +39,7 @@ public class ChamadoController {
     }
 
     @PutMapping("/{id}/escalonar")
+    @PreAuthorize("hasAnyAuthority('ATENDENTE_N1', 'ATENDENTE_N2', 'ATENDENTE_N3', 'SETOR_ADMINISTRATIVO')")
     public ResponseEntity<ChamadoResponseDTO> escalonarChamado(
             @PathVariable Long id,
             @RequestParam Perfil novoNivel) {
@@ -45,6 +47,7 @@ public class ChamadoController {
     }
 
     @PutMapping("/{id}/atender")
+    @PreAuthorize("hasAnyAuthority('ATENDENTE_N1', 'ATENDENTE_N2', 'ATENDENTE_N3', 'SETOR_ADMINISTRATIVO')")
     public ResponseEntity<ChamadoResponseDTO> atenderEConverter(
             @PathVariable Long id,
             @RequestParam Long atendenteId,
@@ -54,6 +57,7 @@ public class ChamadoController {
     }
 
     @GetMapping("/dashboard")
+    @PreAuthorize("hasAnyAuthority('ATENDENTE_N1', 'ATENDENTE_N2', 'ATENDENTE_N3', 'SETOR_ADMINISTRATIVO')")
     public ResponseEntity<DashboardDTO> obterDashboard() {
         return ResponseEntity.ok(chamadoService.obterMetricsDashboard());
     }

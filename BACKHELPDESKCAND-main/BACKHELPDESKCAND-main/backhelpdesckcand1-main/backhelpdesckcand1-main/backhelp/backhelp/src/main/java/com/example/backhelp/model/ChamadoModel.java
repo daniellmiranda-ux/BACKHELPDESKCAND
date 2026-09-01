@@ -35,7 +35,9 @@ public class ChamadoModel {
     @Enumerated(EnumType.STRING)
     private Perfil nivelAtendimento;
 
+    @Column(updatable = false, nullable = false)
     private LocalDateTime dataCriacao;
+
     private LocalDateTime dataFinalizacao;
     private LocalDateTime dataLimiteSla;
 
@@ -86,115 +88,38 @@ public class ChamadoModel {
         }
     }
 
-    public Long getId() {
-        return id;
+    public boolean isAtrasado() {
+        if (this.status == StatusChamado.FECHADO) {
+            return false;
+        }
+        return this.dataLimiteSla != null && LocalDateTime.now().isAfter(this.dataLimiteSla);
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public Long getId() { return id; }
+    public String getProtocolo() { return protocolo; }
+    public Categoria getCategoria() { return categoria; }
+    public Urgencia getUrgencia() { return urgencia; }
+    public String getDescricao() { return descricao; }
+    public String getCaminhoAnexo() { return caminhoAnexo; }
+    public StatusChamado getStatus() { return status; }
+    public Perfil getNivelAtendimento() { return nivelAtendimento; }
+    public LocalDateTime getDataCriacao() { return dataCriacao; }
+    public LocalDateTime getDataFinalizacao() { return dataFinalizacao; }
+    public LocalDateTime getDataLimiteSla() { return dataLimiteSla; }
+    public UsuarioModel getUsuarioAbertura() { return usuarioAbertura; }
+    public UsuarioModel getAtendenteResponsavel() { return atendenteResponsavel; }
+    public String getSolucao() { return solucao; }
 
-    public String getProtocolo() {
-        return protocolo;
-    }
-
-    public void setProtocolo(String protocolo) {
-        this.protocolo = protocolo;
-    }
-
-    public Categoria getCategoria() {
-        return categoria;
-    }
-
-    public void setCategoria(Categoria categoria) {
-        this.categoria = categoria;
-    }
-
-    public Urgencia getUrgencia() {
-        return urgencia;
-    }
-
-    public void setUrgencia(Urgencia urgencia) {
-        this.urgencia = urgencia;
-    }
-
-    public String getDescricao() {
-        return descricao;
-    }
-
-    public void setDescricao(String descricao) {
-        this.descricao = descricao;
-    }
-
-    public String getCaminhoAnexo() {
-        return caminhoAnexo;
-    }
-
-    public void setCaminhoAnexo(String caminhoAnexo) {
-        this.caminhoAnexo = caminhoAnexo;
-    }
-
-    public StatusChamado getStatus() {
-        return status;
-    }
-
-    public void setStatus(StatusChamado status) {
-        this.status = status;
-    }
-
-    public Perfil getNivelAtendimento() {
-        return nivelAtendimento;
-    }
-
-    public void setNivelAtendimento(Perfil nivelAtendimento) {
-        this.nivelAtendimento = nivelAtendimento;
-    }
-
-    public LocalDateTime getDataCriacao() {
-        return dataCriacao;
-    }
-
-    public void setDataCriacao(LocalDateTime dataCriacao) {
-        this.dataCriacao = dataCriacao;
-    }
-
-    public LocalDateTime getDataFinalizacao() {
-        return dataFinalizacao;
-    }
-
-    public void setDataFinalizacao(LocalDateTime dataFinalizacao) {
-        this.dataFinalizacao = dataFinalizacao;
-    }
-
-    public LocalDateTime getDataLimiteSla() {
-        return dataLimiteSla;
-    }
-
-    public void setDataLimiteSla(LocalDateTime dataLimiteSla) {
-        this.dataLimiteSla = dataLimiteSla;
-    }
-
-    public UsuarioModel getUsuarioAbertura() {
-        return usuarioAbertura;
-    }
-
-    public void setUsuarioAbertura(UsuarioModel usuarioAbertura) {
-        this.usuarioAbertura = usuarioAbertura;
-    }
-
-    public UsuarioModel getAtendenteResponsavel() {
-        return atendenteResponsavel;
-    }
-
-    public void setAtendenteResponsavel(UsuarioModel atendenteResponsavel) {
-        this.atendenteResponsavel = atendenteResponsavel;
-    }
-
-    public String getSolucao() {
-        return solucao;
-    }
-
-    public void setSolucao(String solucao) {
-        this.solucao = solucao;
-    }
+    public void setId(Long id) { this.id = id; }
+    public void setCategoria(Categoria categoria) { this.categoria = categoria; }
+    public void setUrgencia(Urgencia urgencia) { this.urgencia = urgencia; }
+    public void setDescricao(String descricao) { this.descricao = descricao; }
+    public void setCaminhoAnexo(String caminhoAnexo) { this.caminhoAnexo = caminhoAnexo; }
+    public void setStatus(StatusChamado status) { this.status = status; }
+    public void setNivelAtendimento(Perfil nivelAtendimento) { this.nivelAtendimento = nivelAtendimento; }
+    public void setDataFinalizacao(LocalDateTime dataFinalizacao) { this.dataFinalizacao = dataFinalizacao; }
+    public void setDataLimiteSla(LocalDateTime dataLimiteSla) { this.dataLimiteSla = dataLimiteSla; }
+    public void setUsuarioAbertura(UsuarioModel usuarioAbertura) { this.usuarioAbertura = usuarioAbertura; }
+    public void setAtendenteResponsavel(UsuarioModel atendenteResponsavel) { this.atendenteResponsavel = atendenteResponsavel; }
+    public void setSolucao(String solucao) { this.solucao = solucao; }
 }
