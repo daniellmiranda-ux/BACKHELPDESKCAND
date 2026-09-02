@@ -7,8 +7,10 @@ import com.example.backhelp.dto.UsuarioResponseDTO;
 import com.example.backhelp.model.UsuarioModel;
 import com.example.backhelp.repository.UsuarioRepository;
 import com.example.backhelp.security.JwtTokenProvider;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -25,6 +27,7 @@ public class UsuarioService {
         this.tokenProvider = tokenProvider;
     }
 
+    @Transactional
     public UsuarioResponseDTO cadastrar(UsuarioRequestDTO dto) {
         if (dto.email() == null || !dto.email().endsWith("@helpdeskcand.com")) {
             throw new IllegalArgumentException("Apenas e-mails do domínio @helpdeskcand.com são permitidos.");
@@ -45,9 +48,10 @@ public class UsuarioService {
         return toDTO(salvo);
     }
 
+    @Transactional
     public UsuarioResponseDTO editarUsuario(Long id, UsuarioRequestDTO dto) {
         UsuarioModel usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
+                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
 
         if (dto.email() != null) {
             if (!dto.email().endsWith("@helpdeskcand.com")) {
@@ -66,25 +70,29 @@ public class UsuarioService {
         return toDTO(atualizado);
     }
 
+    @Transactional(readOnly = true)
     public TokenResponseDTO login(LoginRequestDTO dto) {
         UsuarioModel usuario = usuarioRepository.findByEmail(dto.email())
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
+                .orElseThrow(() -> new BadCredentialsException("E-mail ou senha inválidos."));
 
         if (!passwordEncoder.matches(dto.senha(), usuario.getSenha())) {
-            throw new RuntimeException("Senha incorreta.");
+            throw new BadCredentialsException("E-mail ou senha inválidos.");
         }
 
         String token = tokenProvider.gerarToken(usuario.getEmail(), usuario.getPerfil().name());
         return new TokenResponseDTO(token, "Bearer", toDTO(usuario));
     }
 
+    @Transactional
     public UsuarioResponseDTO confirmarEmail(Long id) {
         UsuarioModel usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
+                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
+
         usuario.setEmailConfirmado(true);
         return toDTO(usuarioRepository.save(usuario));
     }
 
+    @Transactional(readOnly = true)
     public List<UsuarioResponseDTO> listarTodos() {
         return usuarioRepository.findAll().stream().map(this::toDTO).toList();
     }

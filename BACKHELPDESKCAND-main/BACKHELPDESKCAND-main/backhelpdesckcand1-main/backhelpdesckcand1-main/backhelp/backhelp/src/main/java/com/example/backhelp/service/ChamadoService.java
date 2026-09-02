@@ -7,6 +7,7 @@ import com.example.backhelp.model.*;
 import com.example.backhelp.repository.ChamadoRepository;
 import com.example.backhelp.repository.UsuarioRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -24,9 +25,10 @@ public class ChamadoService {
         this.usuarioRepository = usuarioRepository;
     }
 
+    @Transactional
     public ChamadoResponseDTO criarChamado(ChamadoRequestDTO dto) {
         UsuarioModel usuario = usuarioRepository.findById(dto.usuarioAberturaId())
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
+                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
 
         if (!usuario.isEmailConfirmado()) {
             throw new IllegalStateException("Abertura bloqueada até a confirmação do e-mail corporativo.");
@@ -54,23 +56,25 @@ public class ChamadoService {
         return toDTO(salvo);
     }
 
+    @Transactional
     public ChamadoResponseDTO escalonarChamado(Long chamadoId, Perfil novoNivel) {
         ChamadoModel chamado = chamadoRepository.findById(chamadoId)
-                .orElseThrow(() -> new RuntimeException("Chamado não encontrado."));
+                .orElseThrow(() -> new IllegalArgumentException("Chamado não encontrado."));
 
-        if (isDowngrade(chamado.getNivelAtendimento(), novoNivel)) {
-            throw new IllegalArgumentException("Proibido rebaixar o nível de atendimento de um chamado.");
+        if (novoNivel == null || chamado.getNivelAtendimento() == null || novoNivel.ordinal() <= chamado.getNivelAtendimento().ordinal()) {
+            throw new IllegalArgumentException("Proibido rebaixar ou manter o mesmo nível de atendimento em um escalonamento.");
         }
 
         chamado.setNivelAtendimento(novoNivel);
         return toDTO(chamadoRepository.save(chamado));
     }
 
+    @Transactional
     public ChamadoResponseDTO atenderEConverter(Long chamadoId, Long atendenteId, StatusChamado novoStatus, String solucao) {
         ChamadoModel chamado = chamadoRepository.findById(chamadoId)
-                .orElseThrow(() -> new RuntimeException("Chamado não encontrado."));
+                .orElseThrow(() -> new IllegalArgumentException("Chamado não encontrado."));
         UsuarioModel atendente = usuarioRepository.findById(atendenteId)
-                .orElseThrow(() -> new RuntimeException("Atendente não encontrado."));
+                .orElseThrow(() -> new IllegalArgumentException("Atendente não encontrado."));
 
         chamado.setAtendenteResponsavel(atendente);
         chamado.setStatus(novoStatus);
@@ -83,32 +87,30 @@ public class ChamadoService {
         return toDTO(chamadoRepository.save(chamado));
     }
 
+    @Transactional(readOnly = true)
     public List<ChamadoResponseDTO> listarComFiltros(StatusChamado status, Perfil nivel, Urgencia urgencia) {
         List<ChamadoModel> chamados = chamadoRepository.findAll();
-        
-        List<ChamadoModel> filtrados = chamados.stream()
+
+        return chamados.stream()
                 .filter(c -> status == null || c.getStatus() == status)
                 .filter(c -> nivel == null || c.getNivelAtendimento() == nivel)
                 .filter(c -> urgencia == null || c.getUrgencia() == urgencia)
+                .map(this::toDTO)
                 .toList();
-
-        atualizarStatusSla(filtrados);
-        return filtrados.stream().map(this::toDTO).toList();
     }
 
+    @Transactional(readOnly = true)
     public List<ChamadoResponseDTO> listarTodos() {
-        List<ChamadoModel> chamados = chamadoRepository.findAll();
-        atualizarStatusSla(chamados);
-        return chamados.stream().map(this::toDTO).toList();
+        return chamadoRepository.findAll().stream().map(this::toDTO).toList();
     }
 
+    @Transactional(readOnly = true)
     public DashboardDTO obterMetricsDashboard() {
         List<ChamadoModel> todos = chamadoRepository.findAll();
-        atualizarStatusSla(todos);
 
-        long abertos = chamadoRepository.countByStatus(StatusChamado.ABERTO);
-        long resolvidos = chamadoRepository.countByStatus(StatusChamado.FECHADO);
-        long atrasados = chamadoRepository.countByStatus(StatusChamado.ATRASADO);
+        long atrasados = todos.stream().filter(ChamadoModel::isAtrasado).count();
+        long resolvidos = todos.stream().filter(c -> c.getStatus() == StatusChamado.FECHADO).count();
+        long abertos = todos.stream().filter(c -> c.getStatus() == StatusChamado.ABERTO && !c.isAtrasado()).count();
 
         LocalDateTime inicioDia = LocalDate.now().atStartOfDay();
         LocalDateTime fimDia = LocalDate.now().atTime(LocalTime.MAX);
@@ -117,29 +119,14 @@ public class ChamadoService {
         return new DashboardDTO(abertos, resolvidos, atrasados, hoje);
     }
 
-    private void atualizarStatusSla(List<ChamadoModel> chamados) {
-        LocalDateTime agora = LocalDateTime.now();
-        for (ChamadoModel chamado : chamados) {
-            if (chamado.getStatus() != StatusChamado.FECHADO &&
-                    chamado.getDataLimiteSla() != null &&
-                    agora.isAfter(chamado.getDataLimiteSla())) {
-                chamado.setStatus(StatusChamado.ATRASADO);
-                chamadoRepository.save(chamado);
-            }
-        }
-    }
-
     private boolean validarAnexo(String caminho) {
         String lower = caminho.toLowerCase();
         return lower.endsWith(".pdf") || lower.endsWith(".svg") || lower.endsWith(".png") || lower.endsWith(".jpg");
     }
 
-    private boolean isDowngrade(Perfil atual, Perfil novo) {
-        if (atual == null || novo == null) return false;
-        return novo.ordinal() < atual.ordinal();
-    }
-
     private ChamadoResponseDTO toDTO(ChamadoModel model) {
+        StatusChamado statusExibicao = model.isAtrasado() ? StatusChamado.ATRASADO : model.getStatus();
+
         return new ChamadoResponseDTO(
                 model.getId(),
                 model.getProtocolo(),
@@ -147,7 +134,7 @@ public class ChamadoService {
                 model.getUrgencia(),
                 model.getDescricao(),
                 model.getCaminhoAnexo(),
-                model.getStatus(),
+                statusExibicao,
                 model.getNivelAtendimento(),
                 model.getDataCriacao(),
                 model.getDataLimiteSla(),
