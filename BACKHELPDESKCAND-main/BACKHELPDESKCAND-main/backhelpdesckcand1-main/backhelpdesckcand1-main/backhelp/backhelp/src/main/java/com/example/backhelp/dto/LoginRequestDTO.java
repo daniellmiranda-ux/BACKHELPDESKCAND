@@ -1,6 +1,8 @@
 package com.example.backhelp.dto;
 
+import jakarta.validation.constraints.NotBlank;
+
 public record LoginRequestDTO(
-        String email,
-        String senha
+        @NotBlank(message = "O e-mail é obrigatório") String email,
+        @NotBlank(message = "A senha é obrigatória") String senha
 ) {}
