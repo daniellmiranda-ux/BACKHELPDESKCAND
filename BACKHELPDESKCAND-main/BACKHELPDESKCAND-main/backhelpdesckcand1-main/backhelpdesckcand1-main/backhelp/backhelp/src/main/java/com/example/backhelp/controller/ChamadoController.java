@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -27,7 +28,11 @@ public class ChamadoController {
 
     @PostMapping
     public ResponseEntity<ChamadoResponseDTO> criarChamado(@Valid @RequestBody ChamadoRequestDTO dto) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(chamadoService.criarChamado(dto));
+
+        String emailUsuario = SecurityContextHolder.getContext().
+                getAuthentication().getName();
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(chamadoService.criarChamado(dto, emailUsuario));
     }
 
     @GetMapping

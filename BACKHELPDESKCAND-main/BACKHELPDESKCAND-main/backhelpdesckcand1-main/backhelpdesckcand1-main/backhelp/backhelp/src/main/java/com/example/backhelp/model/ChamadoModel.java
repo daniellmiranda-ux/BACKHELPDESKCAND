@@ -52,6 +52,8 @@ public class ChamadoModel {
     @Column(columnDefinition = "TEXT")
     private String solucao;
 
+
+
     public ChamadoModel() {
     }
 
@@ -83,7 +85,16 @@ public class ChamadoModel {
             this.protocolo = "HD-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         }
 
-        if (this.urgencia != null) {
+        calcularSla();
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        calcularSla();
+    }
+
+    private void calcularSla() {
+        if (this.urgencia != null && this.dataCriacao != null) {
             this.dataLimiteSla = this.dataCriacao.plusHours(this.urgencia.getHorasSla());
         }
     }

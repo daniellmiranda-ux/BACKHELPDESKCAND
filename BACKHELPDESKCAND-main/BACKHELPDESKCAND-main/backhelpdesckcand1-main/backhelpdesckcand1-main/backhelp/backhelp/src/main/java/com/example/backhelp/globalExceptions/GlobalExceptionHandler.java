@@ -1,4 +1,4 @@
-package com.example.backhelp.exception;
+package com.example.backhelp.globalExceptions;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

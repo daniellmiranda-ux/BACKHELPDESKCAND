@@ -26,8 +26,9 @@ public class ChamadoService {
     }
 
     @Transactional
-    public ChamadoResponseDTO criarChamado(ChamadoRequestDTO dto) {
-        UsuarioModel usuario = usuarioRepository.findById(dto.usuarioAberturaId())
+    public ChamadoResponseDTO criarChamado(ChamadoRequestDTO dto, String emailUsuario) { // <-- Assinatura atualizada aqui
+
+        UsuarioModel usuario = usuarioRepository.findByEmail(emailUsuario)
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
 
         if (!usuario.isEmailConfirmado()) {
