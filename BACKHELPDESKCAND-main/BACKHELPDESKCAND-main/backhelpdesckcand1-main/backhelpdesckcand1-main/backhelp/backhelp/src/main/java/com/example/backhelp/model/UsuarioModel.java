@@ -1,6 +1,8 @@
 package com.example.backhelp.model;
 
 import jakarta.persistence.*;
+import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "tb_usuarios")
@@ -25,6 +27,14 @@ public class UsuarioModel {
 
     @Column(nullable = false)
     private boolean emailConfirmado = false;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "usuarioAbertura")
+    private List<ChamadoModel> chamadosAbertos;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "atendenteResponsavel")
+    private List<ChamadoModel> chamadosAtendidos;
 
     public UsuarioModel() {
     }
@@ -94,5 +104,20 @@ public class UsuarioModel {
 
     public void setEmailConfirmado(boolean emailConfirmado) {
         this.emailConfirmado = emailConfirmado;
+    }
+    public List<ChamadoModel> getChamadosAbertos() {
+        return chamadosAbertos;
+    }
+
+    public void setChamadosAbertos(List<ChamadoModel> chamadosAbertos) {
+        this.chamadosAbertos = chamadosAbertos;
+    }
+
+    public List<ChamadoModel> getChamadosAtendidos() {
+        return chamadosAtendidos;
+    }
+
+    public void setChamadosAtendidos(List<ChamadoModel> chamadosAtendidos) {
+        this.chamadosAtendidos = chamadosAtendidos;
     }
 }
