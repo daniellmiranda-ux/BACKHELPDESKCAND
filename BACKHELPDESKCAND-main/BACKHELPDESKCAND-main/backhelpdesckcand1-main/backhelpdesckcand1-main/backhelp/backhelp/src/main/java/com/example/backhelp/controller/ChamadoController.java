@@ -28,10 +28,7 @@ public class ChamadoController {
 
     @PostMapping
     public ResponseEntity<ChamadoResponseDTO> criarChamado(@Valid @RequestBody ChamadoRequestDTO dto) {
-
-        String emailUsuario = SecurityContextHolder.getContext().
-                getAuthentication().getName();
-
+        String emailUsuario = SecurityContextHolder.getContext().getAuthentication().getName();
         return ResponseEntity.status(HttpStatus.CREATED).body(chamadoService.criarChamado(dto, emailUsuario));
     }
 
@@ -44,7 +41,7 @@ public class ChamadoController {
     }
 
     @PutMapping("/{id}/escalonar")
-    @PreAuthorize("hasAnyAuthority('ATENDENTE_N1', 'ATENDENTE_N2', 'ATENDENTE_N3', 'SETOR_ADMINISTRATIVO')")
+    @PreAuthorize("hasAnyRole('ATENDENTE_N1', 'ATENDENTE_N2', 'ATENDENTE_N3')")
     public ResponseEntity<ChamadoResponseDTO> escalonarChamado(
             @PathVariable Long id,
             @RequestParam Perfil novoNivel) {
@@ -52,7 +49,7 @@ public class ChamadoController {
     }
 
     @PutMapping("/{id}/atender")
-    @PreAuthorize("hasAnyAuthority('ATENDENTE_N1', 'ATENDENTE_N2', 'ATENDENTE_N3', 'SETOR_ADMINISTRATIVO')")
+    @PreAuthorize("hasAnyRole('ATENDENTE_N1', 'ATENDENTE_N2', 'ATENDENTE_N3')")
     public ResponseEntity<ChamadoResponseDTO> atenderEConverter(
             @PathVariable Long id,
             @RequestParam Long atendenteId,
@@ -62,7 +59,7 @@ public class ChamadoController {
     }
 
     @GetMapping("/dashboard")
-    @PreAuthorize("hasAnyAuthority('ATENDENTE_N1', 'ATENDENTE_N2', 'ATENDENTE_N3', 'SETOR_ADMINISTRATIVO')")
+    @PreAuthorize("hasAnyRole('ATENDENTE_N1', 'ATENDENTE_N2', 'ATENDENTE_N3', 'SETOR_ADMINISTRATIVO')")
     public ResponseEntity<DashboardDTO> obterDashboard() {
         return ResponseEntity.ok(chamadoService.obterMetricsDashboard());
     }
