@@ -26,8 +26,7 @@ public class ChamadoService {
     }
 
     @Transactional
-    public ChamadoResponseDTO criarChamado(ChamadoRequestDTO dto, String emailUsuario) { // <-- Assinatura atualizada aqui
-
+    public ChamadoResponseDTO criarChamado(ChamadoRequestDTO dto, String emailUsuario) {
         UsuarioModel usuario = usuarioRepository.findByEmail(emailUsuario)
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
 
@@ -62,9 +61,7 @@ public class ChamadoService {
         ChamadoModel chamado = chamadoRepository.findById(chamadoId)
                 .orElseThrow(() -> new IllegalArgumentException("Chamado não encontrado."));
 
-        if (novoNivel == null || chamado.getNivelAtendimento() == null || novoNivel.ordinal() <= chamado.getNivelAtendimento().ordinal()) {
-            throw new IllegalArgumentException("Proibido rebaixar ou manter o mesmo nível de atendimento em um escalonamento.");
-        }
+        validarEscalonamento(chamado.getNivelAtendimento(), novoNivel);
 
         chamado.setNivelAtendimento(novoNivel);
         return toDTO(chamadoRepository.save(chamado));
@@ -74,8 +71,13 @@ public class ChamadoService {
     public ChamadoResponseDTO atenderEConverter(Long chamadoId, Long atendenteId, StatusChamado novoStatus, String solucao) {
         ChamadoModel chamado = chamadoRepository.findById(chamadoId)
                 .orElseThrow(() -> new IllegalArgumentException("Chamado não encontrado."));
+
         UsuarioModel atendente = usuarioRepository.findById(atendenteId)
                 .orElseThrow(() -> new IllegalArgumentException("Atendente não encontrado."));
+
+        if (atendente.getPerfil() == Perfil.USUARIO_COMUM || atendente.getPerfil() == Perfil.SETOR_ADMINISTRATIVO) {
+            throw new IllegalArgumentException("Apenas atendentes técnicos (N1, N2, N3) podem assumir chamados.");
+        }
 
         chamado.setAtendenteResponsavel(atendente);
         chamado.setStatus(novoStatus);
@@ -118,6 +120,24 @@ public class ChamadoService {
         long hoje = chamadoRepository.countByDataCriacaoBetween(inicioDia, fimDia);
 
         return new DashboardDTO(abertos, resolvidos, atrasados, hoje);
+    }
+
+    private void validarEscalonamento(Perfil atual, Perfil novo) {
+        if (novo == null || (novo != Perfil.ATENDENTE_N1 && novo != Perfil.ATENDENTE_N2 && novo != Perfil.ATENDENTE_N3)) {
+            throw new IllegalArgumentException("O nível de destino deve ser um perfil de atendente válido (N1, N2 ou N3).");
+        }
+
+        if (atual == Perfil.ATENDENTE_N3) {
+            throw new IllegalArgumentException("Proibido escalonar: O chamado já está no nível máximo (N3).");
+        }
+
+        if (atual == Perfil.ATENDENTE_N1 && novo != Perfil.ATENDENTE_N2 && novo != Perfil.ATENDENTE_N3) {
+            throw new IllegalArgumentException("Proibido rebaixar nível: N1 só pode avançar para N2 ou N3.");
+        }
+
+        if (atual == Perfil.ATENDENTE_N2 && novo != Perfil.ATENDENTE_N3) {
+            throw new IllegalArgumentException("Proibido rebaixar nível: N2 só pode avançar para N3.");
+        }
     }
 
     private boolean validarAnexo(String caminho) {

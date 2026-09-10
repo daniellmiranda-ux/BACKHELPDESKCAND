@@ -4,6 +4,7 @@ import com.example.backhelp.model.Categoria;
 import com.example.backhelp.model.Urgencia;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 
 public record ChamadoRequestDTO(
 
@@ -16,5 +17,9 @@ public record ChamadoRequestDTO(
         @NotBlank(message = "A descrição do chamado não pode estar vazia.")
         String descricao,
 
+        @Pattern(
+                regexp = "^$|^.*\\.(pdf|svg|png|jpg|PDF|SVG|PNG|JPG)$",
+                message = "Formato de anexo inválido. Permitidos apenas .pdf, .svg, .png ou .jpg"
+        )
         String caminhoAnexo
 ) {}
