@@ -79,9 +79,13 @@ src/
               SecurityConfig.java
             service/
               ChamadoService.java
+              EmailService.java
               UsuarioService.java
             BackhelpApplication.java
     resources/
+      db/
+        migration/
+          V1__criar_tabelas_iniciais.sql
       application.properties
   test/
     java/
@@ -198,7 +202,7 @@ public class UsuarioController {
     }
 
     @PostMapping("/cadastrar")
-    @PreAuthorize("hasAuthority('SETOR_ADMINISTRATIVO')")
+    //@PreAuthorize("hasAuthority('SETOR_ADMINISTRATIVO')")
     public ResponseEntity<UsuarioResponseDTO> cadastrar(@Valid @RequestBody UsuarioRequestDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(usuarioService.cadastrar(dto));
     }
@@ -988,6 +992,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/cadastro").permitAll()
                         .requestMatchers("/api/usuarios/login", "/api/usuarios/confirmar-email").permitAll()
                         .anyRequest().authenticated()
                 )
@@ -1190,6 +1195,37 @@ public class ChamadoService {
 }
 </file>
 
+<file path="src/main/java/com/example/backhelp/service/EmailService.java">
+package com.example.backhelp.service;
+
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.stereotype.Service;
+
+@Service
+public class EmailService {
+
+    private final JavaMailSender mailSender;
+
+    public EmailService(JavaMailSender mailSender) {
+        this.mailSender = mailSender;
+    }
+
+    public void enviarEmailConfirmacao(String destinatario, String tokenOuId) {
+        SimpleMailMessage email = new SimpleMailMessage();
+
+        email.setTo(destinatario);
+        email.setSubject("Confirme seu cadastro - Sistema HelpDesk");
+
+        String link = "http://localhost:8080/usuarios/confirmar?id=" + tokenOuId;
+
+        email.setText("Olá!\n\nPor favor, clique no link abaixo para confirmar seu e-mail e liberar seu acesso ao sistema:\n" + link);
+
+        mailSender.send(email);
+    }
+}
+</file>
+
 <file path="src/main/java/com/example/backhelp/service/UsuarioService.java">
 package com.example.backhelp.service;
 
@@ -1213,18 +1249,20 @@ public class UsuarioService {
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider tokenProvider;
+    private final EmailService emailService;
 
-    public UsuarioService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder, JwtTokenProvider tokenProvider) {
+    public UsuarioService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder, JwtTokenProvider tokenProvider, EmailService emailService) {
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
         this.tokenProvider = tokenProvider;
+        this.emailService = emailService;
     }
 
     @Transactional
     public UsuarioResponseDTO cadastrar(UsuarioRequestDTO dto) {
-        if (dto.email() == null || !dto.email().endsWith("@helpdeskcand.com")) {
-            throw new IllegalArgumentException("Apenas e-mails do domínio @helpdeskcand.com são permitidos.");
-        }
+        //if (dto.email() == null || !dto.email().endsWith("@helpdeskcand.com")) {
+          //  throw new IllegalArgumentException("Apenas e-mails do domínio @helpdeskcand.com são permitidos.");
+        //}
         if (usuarioRepository.existsByEmail(dto.email())) {
             throw new IllegalArgumentException("E-mail já cadastrado.");
         }
@@ -1238,6 +1276,9 @@ public class UsuarioService {
         usuario.setEmailConfirmado(false);
 
         UsuarioModel salvo = usuarioRepository.save(usuario);
+
+        emailService.enviarEmailConfirmacao(salvo.getEmail(), salvo.getId().toString());
+
         return toDTO(salvo);
     }
 
@@ -1319,15 +1360,48 @@ public class BackhelpApplication {
 }
 </file>
 
+<file path="src/main/resources/db/migration/V1__criar_tabelas_iniciais.sql">
+CREATE TABLE usuarios (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    senha VARCHAR(255) NOT NULL,
+    setor VARCHAR(100),
+    perfil VARCHAR(50) NOT NULL,
+    email_confirmado BOOLEAN DEFAULT FALSE
+);
+
+CREATE TABLE chamados (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    titulo VARCHAR(255) NOT NULL,
+    descricao TEXT NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    nivel VARCHAR(50) NOT NULL,
+    urgencia VARCHAR(50) NOT NULL,
+    prazo_resolucao DATETIME,
+    caminho_anexo VARCHAR(255),
+    usuario_id BIGINT,
+    CONSTRAINT fk_chamado_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+);
+</file>
+
 <file path="src/main/resources/application.properties">
-spring.datasource.url=jdbc:mysql://localhost:3306/helpdesk_db?createDatabaseIfNotExist=true&serverTimezone=UTC
-spring.datasource.username=root
-spring.datasource.password=
+spring.datasource.url=${DB_URL:jdbc:mysql://localhost:3306/helpdesk_db?createDatabaseIfNotExist=true&serverTimezone=UTC}
+spring.datasource.username=${DB_USER:root}
+spring.datasource.password=${DB_PASS:}
 spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
 
-spring.jpa.hibernate.ddl-auto=update
+spring.jpa.hibernate.ddl-auto=${DDL_AUTO:update}
 spring.jpa.show-sql=true
 spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQLDialect
+
+spring.mail.host=${MAIL_HOST:smtp.gmail.com}
+spring.mail.port=${MAIL_PORT:587}
+spring.mail.username=${MAIL_USER:alexlevysousaguimaraes@gmail.com}
+
+spring.mail.password=${MAIL_PASS:jigczqwnvvzyhrar}
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
 </file>
 
 <file path="src/test/java/com/example/backhelp/BackhelpApplicationTests.java">
@@ -1901,6 +1975,18 @@ Write-Output "MVN_CMD=$MAVEN_HOME/bin/$MVN_CMD"
 		<java.version>21</java.version>
 	</properties>
 	<dependencies>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-mail</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-mysql</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>

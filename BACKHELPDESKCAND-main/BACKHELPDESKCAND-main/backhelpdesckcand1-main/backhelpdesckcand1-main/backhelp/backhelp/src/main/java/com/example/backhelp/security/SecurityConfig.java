@@ -38,6 +38,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/cadastro").permitAll()
                         .requestMatchers("/api/usuarios/login", "/api/usuarios/confirmar-email").permitAll()
                         .anyRequest().authenticated()
                 )

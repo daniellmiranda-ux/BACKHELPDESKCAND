@@ -20,18 +20,20 @@ public class UsuarioService {
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider tokenProvider;
+    private final EmailService emailService;
 
-    public UsuarioService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder, JwtTokenProvider tokenProvider) {
+    public UsuarioService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder, JwtTokenProvider tokenProvider, EmailService emailService) {
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
         this.tokenProvider = tokenProvider;
+        this.emailService = emailService;
     }
 
     @Transactional
     public UsuarioResponseDTO cadastrar(UsuarioRequestDTO dto) {
-        if (dto.email() == null || !dto.email().endsWith("@helpdeskcand.com")) {
-            throw new IllegalArgumentException("Apenas e-mails do domínio @helpdeskcand.com são permitidos.");
-        }
+        //if (dto.email() == null || !dto.email().endsWith("@helpdeskcand.com")) {
+          //  throw new IllegalArgumentException("Apenas e-mails do domínio @helpdeskcand.com são permitidos.");
+        //}
         if (usuarioRepository.existsByEmail(dto.email())) {
             throw new IllegalArgumentException("E-mail já cadastrado.");
         }
@@ -45,6 +47,9 @@ public class UsuarioService {
         usuario.setEmailConfirmado(false);
 
         UsuarioModel salvo = usuarioRepository.save(usuario);
+
+        emailService.enviarEmailConfirmacao(salvo.getEmail(), salvo.getId().toString());
+
         return toDTO(salvo);
     }
 
