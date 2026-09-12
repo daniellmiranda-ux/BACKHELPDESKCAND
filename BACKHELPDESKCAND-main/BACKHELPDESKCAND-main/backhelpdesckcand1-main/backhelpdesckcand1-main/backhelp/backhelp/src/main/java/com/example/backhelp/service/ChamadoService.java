@@ -92,12 +92,7 @@ public class ChamadoService {
 
     @Transactional(readOnly = true)
     public List<ChamadoResponseDTO> listarComFiltros(StatusChamado status, Perfil nivel, Urgencia urgencia) {
-        List<ChamadoModel> chamados = chamadoRepository.findAll();
-
-        return chamados.stream()
-                .filter(c -> status == null || c.getStatus() == status)
-                .filter(c -> nivel == null || c.getNivelAtendimento() == nivel)
-                .filter(c -> urgencia == null || c.getUrgencia() == urgencia)
+        return chamadoRepository.buscarComFiltros(status, nivel, urgencia).stream()
                 .map(this::toDTO)
                 .toList();
     }
@@ -109,11 +104,11 @@ public class ChamadoService {
 
     @Transactional(readOnly = true)
     public DashboardDTO obterMetricsDashboard() {
-        List<ChamadoModel> todos = chamadoRepository.findAll();
+        LocalDateTime agora = LocalDateTime.now();
 
-        long atrasados = todos.stream().filter(ChamadoModel::isAtrasado).count();
-        long resolvidos = todos.stream().filter(c -> c.getStatus() == StatusChamado.FECHADO).count();
-        long abertos = todos.stream().filter(c -> c.getStatus() == StatusChamado.ABERTO && !c.isAtrasado()).count();
+        long atrasados = chamadoRepository.countAtrasados(agora);
+        long resolvidos = chamadoRepository.countByStatus(StatusChamado.FECHADO);
+        long abertos = chamadoRepository.countAbertosNaoAtrasados(agora);
 
         LocalDateTime inicioDia = LocalDate.now().atStartOfDay();
         LocalDateTime fimDia = LocalDate.now().atTime(LocalTime.MAX);

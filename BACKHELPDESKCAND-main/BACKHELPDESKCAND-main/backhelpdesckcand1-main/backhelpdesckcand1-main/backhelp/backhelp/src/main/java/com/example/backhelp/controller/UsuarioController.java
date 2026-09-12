@@ -24,7 +24,7 @@ public class UsuarioController {
     }
 
     @PostMapping("/cadastrar")
-    @PreAuthorize("hasAuthority('SETOR_ADMINISTRATIVO')")
+    @PreAuthorize("hasAnyAuthority('SETOR_ADMINISTRATIVO', 'ROLE_SETOR_ADMINISTRATIVO')")
     public ResponseEntity<UsuarioResponseDTO> cadastrar(@Valid @RequestBody UsuarioRequestDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(usuarioService.cadastrar(dto));
     }
@@ -35,20 +35,20 @@ public class UsuarioController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAuthority('SETOR_ADMINISTRATIVO')")
+    @PreAuthorize("hasAnyAuthority('SETOR_ADMINISTRATIVO', 'ROLE_SETOR_ADMINISTRATIVO')")
     public ResponseEntity<UsuarioResponseDTO> editarUsuario(
             @PathVariable Long id,
             @RequestBody @Valid UsuarioRequestDTO dto) {
         return ResponseEntity.ok(usuarioService.editarUsuario(id, dto));
     }
 
-    @PutMapping("/{id}/confirmar-email")
-    public ResponseEntity<UsuarioResponseDTO> confirmarEmail(@PathVariable Long id) {
+    @GetMapping("/confirmar-email")
+    public ResponseEntity<UsuarioResponseDTO> confirmarEmail(@RequestParam Long id) {
         return ResponseEntity.ok(usuarioService.confirmarEmail(id));
     }
 
     @GetMapping
-    @PreAuthorize("hasAuthority('SETOR_ADMINISTRATIVO')")
+    @PreAuthorize("hasAnyAuthority('SETOR_ADMINISTRATIVO', 'ROLE_SETOR_ADMINISTRATIVO')")
     public ResponseEntity<List<UsuarioResponseDTO>> listarTodos() {
         return ResponseEntity.ok(usuarioService.listarTodos());
     }

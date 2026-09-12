@@ -20,11 +20,16 @@ public class UsuarioService {
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider tokenProvider;
+    private final EmailService emailService;
 
-    public UsuarioService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder, JwtTokenProvider tokenProvider) {
+    public UsuarioService(UsuarioRepository usuarioRepository,
+                          PasswordEncoder passwordEncoder,
+                          JwtTokenProvider tokenProvider,
+                          EmailService emailService) {
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
         this.tokenProvider = tokenProvider;
+        this.emailService = emailService;
     }
 
     @Transactional
@@ -45,6 +50,13 @@ public class UsuarioService {
         usuario.setEmailConfirmado(false);
 
         UsuarioModel salvo = usuarioRepository.save(usuario);
+
+        try {
+            emailService.enviarEmailConfirmacao(salvo.getEmail(), salvo.getId().toString());
+        } catch (Exception e) {
+            System.err.println("Aviso: Falha ao enviar e-mail de confirmação: " + e.getMessage());
+        }
+
         return toDTO(salvo);
     }
 
