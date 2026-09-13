@@ -6,19 +6,35 @@ import com.example.backhelp.dto.DashboardDTO;
 import com.example.backhelp.model.*;
 import com.example.backhelp.repository.ChamadoRepository;
 import com.example.backhelp.repository.UsuarioRepository;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class ChamadoService {
 
     private final ChamadoRepository chamadoRepository;
     private final UsuarioRepository usuarioRepository;
+
+    @Value("${app.upload.dir:uploads}")
+    private String uploadDir;
 
     public ChamadoService(ChamadoRepository chamadoRepository, UsuarioRepository usuarioRepository) {
         this.chamadoRepository = chamadoRepository;
@@ -54,6 +70,73 @@ public class ChamadoService {
 
         ChamadoModel salvo = chamadoRepository.save(chamado);
         return toDTO(salvo);
+    }
+
+    @Transactional
+    public ChamadoResponseDTO salvarAnexo(Long chamadoId, MultipartFile file) {
+        ChamadoModel chamado = chamadoRepository.findById(chamadoId)
+                .orElseThrow(() -> new IllegalArgumentException("Chamado não encontrado com ID: " + chamadoId));
+
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("O arquivo enviado não pode estar vazio.");
+        }
+
+        try {
+            Path pathDiretorio = Paths.get(uploadDir);
+            if (!Files.exists(pathDiretorio)) {
+                Files.createDirectories(pathDiretorio);
+            }
+
+            String nomeOriginal = file.getOriginalFilename();
+            String extensao = "";
+            if (nomeOriginal != null && nomeOriginal.contains(".")) {
+                extensao = nomeOriginal.substring(nomeOriginal.lastIndexOf("."));
+            }
+
+            String nomeArquivo = UUID.randomUUID().toString() + extensao;
+            Path caminhoCompleto = pathDiretorio.resolve(nomeArquivo);
+
+            Files.copy(file.getInputStream(), caminhoCompleto, StandardCopyOption.REPLACE_EXISTING);
+
+            chamado.setCaminhoAnexo(caminhoCompleto.toString());
+            ChamadoModel atualizado = chamadoRepository.save(chamado);
+
+            return toDTO(atualizado);
+        } catch (IOException e) {
+            throw new RuntimeException("Erro ao salvar anexo fotográfico: " + e.getMessage());
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public ResponseEntity<Resource> carregarAnexo(Long id) {
+        ChamadoModel chamado = chamadoRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Chamado não encontrado com ID: " + id));
+
+        if (chamado.getCaminhoAnexo() == null || chamado.getCaminhoAnexo().isBlank()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        try {
+            Path filePath = Paths.get(chamado.getCaminhoAnexo());
+            Resource resource = new UrlResource(filePath.toUri());
+
+            if (!resource.exists() || !resource.isReadable()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            String contentType = Files.probeContentType(filePath);
+            if (contentType == null) {
+                contentType = "application/octet-stream";
+            }
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
+                    .body(resource);
+
+        } catch (IOException e) {
+            throw new RuntimeException("Erro ao carregar anexo: " + e.getMessage());
+        }
     }
 
     @Transactional

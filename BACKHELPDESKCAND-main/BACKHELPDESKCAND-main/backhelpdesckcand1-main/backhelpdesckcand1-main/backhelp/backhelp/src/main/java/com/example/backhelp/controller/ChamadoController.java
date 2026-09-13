@@ -8,11 +8,14 @@ import com.example.backhelp.model.StatusChamado;
 import com.example.backhelp.model.Urgencia;
 import com.example.backhelp.service.ChamadoService;
 import jakarta.validation.Valid;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -30,6 +33,18 @@ public class ChamadoController {
     public ResponseEntity<ChamadoResponseDTO> criarChamado(@Valid @RequestBody ChamadoRequestDTO dto) {
         String emailUsuario = SecurityContextHolder.getContext().getAuthentication().getName();
         return ResponseEntity.status(HttpStatus.CREATED).body(chamadoService.criarChamado(dto, emailUsuario));
+    }
+
+    @PostMapping(value = "/{id}/anexo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ChamadoResponseDTO> uploadAnexo(
+            @PathVariable Long id,
+            @RequestParam("file") MultipartFile file) {
+        return ResponseEntity.ok(chamadoService.salvarAnexo(id, file));
+    }
+
+    @GetMapping("/{id}/anexo")
+    public ResponseEntity<Resource> buscarAnexo(@PathVariable Long id) {
+        return chamadoService.carregarAnexo(id);
     }
 
     @GetMapping

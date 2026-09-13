@@ -23,8 +23,7 @@ public class UsuarioController {
         this.usuarioService = usuarioService;
     }
 
-    @PostMapping("/cadastrar")
-    @PreAuthorize("hasAnyAuthority('SETOR_ADMINISTRATIVO', 'ROLE_SETOR_ADMINISTRATIVO')")
+    @PostMapping({"", "/cadastrar"})
     public ResponseEntity<UsuarioResponseDTO> cadastrar(@Valid @RequestBody UsuarioRequestDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(usuarioService.cadastrar(dto));
     }
