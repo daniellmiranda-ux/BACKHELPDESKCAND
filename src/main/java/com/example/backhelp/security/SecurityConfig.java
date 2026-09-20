@@ -39,10 +39,16 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Libera requisições de pré-voo (pre-flight) do CORS
+
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        // Libera rotas públicas de login, confirmação e tratamento interno de erros (/error)
-                        .requestMatchers("/api/usuarios/login", "/api/usuarios/confirmar-email", "/error").permitAll()
+
+                        .requestMatchers(
+                                "/usuarios/login",
+                                "/api/usuarios/login",
+                                "/usuarios/confirmar-email",
+                                "/api/usuarios/confirmar-email",
+                                "/error"
+                        ).permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
