@@ -6,6 +6,8 @@ import com.example.backhelp.dto.UsuarioRequestDTO;
 import com.example.backhelp.dto.UsuarioResponseDTO;
 import com.example.backhelp.service.UsuarioService;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -16,6 +18,8 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/usuarios")
 public class UsuarioController {
+
+    private static final Logger log = LoggerFactory.getLogger(UsuarioController.class);
 
     private final UsuarioService usuarioService;
 
@@ -30,8 +34,15 @@ public class UsuarioController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<TokenResponseDTO> login(@Valid @RequestBody LoginRequestDTO dto) {
-        return ResponseEntity.ok(usuarioService.login(dto));
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequestDTO dto) {
+        try {
+            return ResponseEntity.ok(usuarioService.login(dto));
+        } catch (Exception e) {
+            log.error("==========================================================");
+            log.error("[UsuarioController] ERRO CRÍTICO NO LOGIN:", e);
+            log.error("==========================================================");
+            throw e;
+        }
     }
 
     @PutMapping("/{id}")
