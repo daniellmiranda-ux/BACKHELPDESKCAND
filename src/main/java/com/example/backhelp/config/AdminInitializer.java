@@ -26,25 +26,24 @@ public class AdminInitializer implements CommandLineRunner {
     public void run(String... args) {
         String adminEmail = "admin@helpdeskcand.com";
 
-        if (!usuarioRepository.existsByEmail(adminEmail)) {
-            UsuarioModel admin = new UsuarioModel();
-            admin.setEmail(adminEmail);
-            admin.setSenha(passwordEncoder.encode("admin123"));
-            admin.setSetor("Administração");
-            admin.setCargo("Administrador do Sistema");
-            admin.setPerfil(Perfil.SETOR_ADMINISTRATIVO);
-            admin.setEmailConfirmado(true);
+        // Procura o utilizador existente ou cria um novo se não existir
+        UsuarioModel admin = usuarioRepository.findByEmail(adminEmail)
+                .orElseGet(UsuarioModel::new);
 
-            usuarioRepository.save(admin);
+        admin.setEmail(adminEmail);
+        admin.setSenha(passwordEncoder.encode("admin123")); // Força a atualização da senha para a hash BCrypt correta
+        admin.setSetor("Administração");
+        admin.setCargo("Administrador do Sistema");
+        admin.setPerfil(Perfil.SETOR_ADMINISTRATIVO);
+        admin.setEmailConfirmado(true);
 
-            log.info("==================================================================");
-            log.info("[AdminInitializer] Usuário Administrador inicial criado com sucesso!");
-            log.info("E-mail: {}", adminEmail);
-            log.info("Senha padrão: admin123");
-            log.info("Perfil: SETOR_ADMINISTRATIVO");
-            log.info("==================================================================");
-        } else {
-            log.info("[AdminInitializer] Usuário Administrador ({}) já existente no banco de dados.", adminEmail);
-        }
+        usuarioRepository.save(admin);
+
+        log.info("==================================================================");
+        log.info("[AdminInitializer] Administrador sincronizado e atualizado com sucesso!");
+        log.info("E-mail: {}", adminEmail);
+        log.info("Senha padrão configurada: admin123");
+        log.info("Perfil: SETOR_ADMINISTRATIVO");
+        log.info("==================================================================");
     }
 }
